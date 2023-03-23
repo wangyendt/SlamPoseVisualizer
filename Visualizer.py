@@ -164,6 +164,6 @@ if __name__ == '__main__':
 
     reader = DataReader()
     reader.register_offline_reader('example/data.csv')
-    reader.register_online_reader(handler)
+    # reader.register_online_reader(handler)
     visualizer = Visualizer(reader)
     visualizer.run()
