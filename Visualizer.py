@@ -26,10 +26,23 @@ class Visualizer:
         self.s_cam = None
         self.d_cam = None
 
+        self.view_point_f = 500
+        self.view_point_x = 0
+        self.view_point_y = -0.7
+        self.view_point_z = -3.5
+        self.w = 640
+        self.h = 480
+        self.fx = 496.9221841793908
+        self.fy = 496.67218249523825
+        self.cx = 320.13043105863295
+        self.cy = 241.12304842660265
+
     def run(self):
         pango.CreateWindowAndBind("pySimpleDisplay", 640, 480)
         glEnable(GL_DEPTH_TEST)
-        pm = pango.ProjectionMatrix(640, 480, 420, 420, 320, 240, 0.1, 1000)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        pm = pango.ProjectionMatrix(self.w, self.h, self.fx, self.fy, self.cx, self.cy, 0.1, 1000)
         mv = pango.ModelViewLookAt(5, -3, 5, 0, 0, 0, pango.AxisZ)
         s_cam = pango.OpenGlRenderState(pm, mv)
         handler = pango.Handler3D(s_cam)
@@ -41,7 +54,7 @@ class Visualizer:
                 pango.Attach(1),
                 pango.Attach.Pix(ui_width),
                 pango.Attach(1),
-                -640.0 / 480.0,
+                -self.w / self.h,
             )
             .SetHandler(handler)
         )
@@ -50,7 +63,10 @@ class Visualizer:
             pango.Attach(0), pango.Attach(1), pango.Attach(0), pango.Attach.Pix(ui_width)
         )
         var_ui = pango.Var("ui")
-        var_ui.a_Button = False
+        var_ui.follow_camera = (False, pango.VarMeta(toggle=True))
+        var_ui.camera_view = False
+        b_follow = True
+        b_camera_view = True
         var_ui.a_Toggle = (False, pango.VarMeta(toggle=True))
         var_ui.a_double = (0.0, pango.VarMeta(0, 5))
         var_ui.an_int = (2, pango.VarMeta(0, 5))
@@ -67,6 +83,7 @@ class Visualizer:
         pango.RegisterKeyPressCallback(ctrl + ord("a"), a_callback)
 
         trajectory = []
+        camera_Twc = []
         for data in self.reader.read():
             ts, px, py, pz, qw, qx, qy, qz = data
             trajectory.append([px, py, pz])
@@ -78,6 +95,13 @@ class Visualizer:
                 [R[0, 2], R[1, 2], R[2, 2], 0],
                 [px, py, pz, 1]
             ])
+            TwcGL = pango.OpenGlMatrix(Twc.T)
+            OwGL = pango.OpenGlMatrix(np.array([
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [px, py, pz, 1.0]
+            ]))
             trajectory.append([px, py, pz])
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -87,6 +111,31 @@ class Visualizer:
 
             if var_ui.GuiChanged('an_int'):
                 var_ui.an_int_no_input = var_ui.an_int
+
+            if var_ui.follow_camera and b_follow:
+                if b_camera_view:
+                    s_cam.Follow(TwcGL)
+                else:
+                    s_cam.Follow(OwGL)
+            elif var_ui.follow_camera and not b_follow:
+                if b_camera_view:
+                    s_cam.SetProjectionMatrix(pango.ProjectionMatrix(self.w, self.h, self.view_point_f, self.view_point_f, self.cx, self.cy, 0.1, 1000))
+                    s_cam.SetModelViewMatrix(pango.ModelViewLookAt(self.view_point_x, self.view_point_y, self.view_point_z, 0, 0, 0, 0.0, -1.0, 0.0))
+                    s_cam.Follow(TwcGL)
+                else:
+                    s_cam.SetProjectionMatrix(pango.ProjectionMatrix(self.w, self.h, 3000, 3000, self.cx, self.cy, 0.1, 1000))
+                    s_cam.SetModelViewMatrix(pango.ModelViewLookAt(0, 0.01, 10, 0, 0, 0, 0.0, 0.0, 1.0))
+                    s_cam.Follow(OwGL)
+                b_follow = True
+            elif not var_ui.follow_camera and b_follow:
+                b_follow = False
+
+            if var_ui.camera_view:
+                var_ui.camera_view = False
+                b_camera_view = True
+                s_cam.SetProjectionMatrix(pango.ProjectionMatrix(self.w, self.h, self.view_point_f, self.view_point_f, self.cx, self.cy, 0.1, 10000))
+                s_cam.SetModelViewMatrix(pango.ModelViewLookAt(self.view_point_x, self.view_point_y, self.view_point_z, 0, 0, 0, 0.0, -1.0, 0.0))
+                s_cam.Follow(TwcGL)
 
             d_cam.Activate(s_cam)
             # pango.glDrawColouredCube()
@@ -104,41 +153,35 @@ class Visualizer:
             glVertex3f(0, 0, 1)
             glEnd()
 
-            quat = Quaternion(np.array([qw, qx, qy, qz]))
-            R = quat.to_DCM()
-            glPushMatrix()
-            Twc = np.array([
-                [R[0, 0], R[1, 0], R[2, 0], 0],
-                [R[0, 1], R[1, 1], R[2, 1], 0],
-                [R[0, 2], R[1, 2], R[2, 2], 0],
-                [px, py, pz, 1]
-            ])
-            glMultMatrixd(Twc)
-
-            w = 0.2
-            h = w * 0.75
-            z = w * 0.6
-            glLineWidth(2)
-            glBegin(GL_LINES)
-            glColor3f(0, 1, 1)
-            glVertex3f(0, 0, 0)
-            glVertex3f(w, h, z)
-            glVertex3f(0, 0, 0)
-            glVertex3f(w, -h, z)
-            glVertex3f(0, 0, 0)
-            glVertex3f(-w, -h, z)
-            glVertex3f(0, 0, 0)
-            glVertex3f(-w, h, z)
-            glVertex3f(w, h, z)
-            glVertex3f(w, -h, z)
-            glVertex3f(-w, h, z)
-            glVertex3f(-w, -h, z)
-            glVertex3f(-w, h, z)
-            glVertex3f(w, h, z)
-            glVertex3f(-w, -h, z)
-            glVertex3f(w, -h, z)
-            glEnd()
-            glPopMatrix()
+            camera_Twc.append(Twc)
+            camera_Twc_ = camera_Twc[:-1][::10] + [camera_Twc[-1]]
+            for i, Twc_ in enumerate(camera_Twc_):
+                w = 0.2
+                h = w * 0.75
+                z = w * 0.6
+                glPushMatrix()
+                glMultMatrixd(Twc_)
+                glLineWidth(2)
+                glBegin(GL_LINES)
+                glColor4f(0, 1, 1, (i + 1) / len(camera_Twc_))
+                glVertex3f(0, 0, 0)
+                glVertex3f(w, h, z)
+                glVertex3f(0, 0, 0)
+                glVertex3f(w, -h, z)
+                glVertex3f(0, 0, 0)
+                glVertex3f(-w, -h, z)
+                glVertex3f(0, 0, 0)
+                glVertex3f(-w, h, z)
+                glVertex3f(w, h, z)
+                glVertex3f(w, -h, z)
+                glVertex3f(-w, h, z)
+                glVertex3f(-w, -h, z)
+                glVertex3f(-w, h, z)
+                glVertex3f(w, h, z)
+                glVertex3f(-w, -h, z)
+                glVertex3f(w, -h, z)
+                glEnd()
+                glPopMatrix()
 
             glLineWidth(2)
             glBegin(GL_LINES)
@@ -154,7 +197,7 @@ class Visualizer:
 
 
 if __name__ == '__main__':
-    def handler(line: str) -> List[float]:
+    def mercury_handler(line: str) -> List[float]:
         if line and 'Twc' in line:
             data = [float(d) for d in re.findall(r'Twc:(.*)', line)[0].split(',')]
             return data
@@ -162,8 +205,17 @@ if __name__ == '__main__':
             return []
 
 
+    def dm_handler(line: str) -> List[float]:
+        if line and 'pose ts' in line:
+            data = [float(d) for d in re.findall(r'pose ts:(.*) px:(.*) py:(.*) pz:(.*) qx:(.*) qy:(.*) qz:(.*) qw:(.*)', line)[0]]
+            data[4], data[5], data[6], data[7] = data[7], data[4], data[5], data[6]
+            return data
+        else:
+            return []
+
+
     reader = DataReader()
     reader.register_offline_reader('example/data.csv')
-    # reader.register_online_reader(handler)
+    # reader.register_online_reader(mercury_handler)
     visualizer = Visualizer(reader)
     visualizer.run()
