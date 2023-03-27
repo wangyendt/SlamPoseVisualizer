@@ -75,8 +75,9 @@ for data in reader.read():
                 raise ValueError('self.path not set or not valid!')
             datas = pd.read_csv(self.path, delimiter=r',|\s').values
             for i in range(datas.shape[0]):
-                data = datas[i].astype(list)
-                yield data
+                yield datas[i].astype(list)
+            while True:
+                yield datas[-1].astype(list)
 
     def close(self):
         if self.logcat:
