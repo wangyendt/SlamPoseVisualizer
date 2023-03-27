@@ -5,7 +5,8 @@
 
 Suppose you have your VO / VIO / SLAM algorithm running online and printing realtime position and quaternion (Twc). You can use this tool to visualize the realtime camera pose. 
 
-![image-20230323133512971](https://p.ipic.vip/kcz16p.png)
+<img width="640" alt="Snipaste_2023-03-27_16-31-40" src="https://user-images.githubusercontent.com/18455758/227886877-de9f0776-c116-45d1-85ae-eb8a66adaafe.png">
+
 
 ## 1. Usage
 
