@@ -46,34 +46,54 @@ class Visualizer:
         mv = pango.ModelViewLookAt(5, -3, 5, 0, 0, 0, pango.AxisZ)
         s_cam = pango.OpenGlRenderState(pm, mv)
         handler = pango.Handler3D(s_cam)
-        ui_width = 180
+
+        ui_width = pango.Attach(0.3)  # 180
         d_cam = (
             pango.CreateDisplay()
             .SetBounds(
                 pango.Attach(0),
                 pango.Attach(1),
-                pango.Attach.Pix(ui_width),
+                ui_width,  # pango.Attach.Pix(ui_width)
                 pango.Attach(1),
                 -self.w / self.h,
             )
             .SetHandler(handler)
         )
 
+        log = pango.DataLog()
+        log.SetLabels(["x", "y", "z"])
+        plotter = pango.Plotter(log, 0, 400, -10, 10, 1, 1)
+        plotter.Track("$i")
+        plotter.SetBounds(pango.Attach(0.4), pango.Attach(0.8),
+                          pango.Attach(0), ui_width)
+
+        log2 = pango.DataLog()
+        log2.SetLabels(["roll", "pitch", "yaw"])
+        plotter2 = pango.Plotter(log2, 0, 400, -200, 200, 1, 1)
+        plotter2.Track("$i")
+        plotter2.AddMarker(pango.Marker.Horizontal, 180, pango.Marker.GreaterThan, pango.Colour.Red().WithAlpha(0.2))
+        plotter2.AddMarker(pango.Marker.Horizontal, -180, pango.Marker.LessThan, pango.Colour.Red().WithAlpha(0.2))
+        plotter2.AddMarker(pango.Marker.Horizontal, 0, pango.Marker.Equal, pango.Colour.Green().WithAlpha(0.2))
+        plotter2.SetBounds(pango.Attach(0), pango.Attach(0.4),
+                           pango.Attach(0), ui_width)
+        pango.DisplayBase().AddDisplay(plotter)
+        pango.DisplayBase().AddDisplay(plotter2)
+
         pango.CreatePanel("ui").SetBounds(
-            pango.Attach(0), pango.Attach(1), pango.Attach(0), pango.Attach.Pix(ui_width)
+            pango.Attach(0.8), pango.Attach(1.0), pango.Attach(0), ui_width
         )
         var_ui = pango.Var("ui")
         var_ui.follow_camera = (False, pango.VarMeta(toggle=True))
         var_ui.camera_view = False
         b_follow = True
         b_camera_view = True
-        var_ui.a_Toggle = (False, pango.VarMeta(toggle=True))
-        var_ui.a_double = (0.0, pango.VarMeta(0, 5))
-        var_ui.an_int = (2, pango.VarMeta(0, 5))
-        var_ui.a_double_log = (3.0, pango.VarMeta(1, 1e4, logscale=True))
-        var_ui.a_checkbox = (False, pango.VarMeta(toggle=True))
-        var_ui.an_int_no_input = 2
-        var_ui.a_str = "sss"
+        # var_ui.a_Toggle = (False, pango.VarMeta(toggle=True))
+        # var_ui.a_double = (0.0, pango.VarMeta(0, 5))
+        # var_ui.an_int = (2, pango.VarMeta(0, 5))
+        # var_ui.a_double_log = (3.0, pango.VarMeta(1, 1e4, logscale=True))
+        # var_ui.a_checkbox = (False, pango.VarMeta(toggle=True))
+        # var_ui.an_int_no_input = 2
+        # var_ui.a_str = "sss"
 
         ctrl = -96
 
@@ -89,6 +109,7 @@ class Visualizer:
             trajectory.append([px, py, pz])
             quat = Quaternion(np.array([qw, qx, qy, qz]))
             R = quat.to_DCM()
+            E = quat.to_angles() * 180 / np.pi
             Twc = np.array([
                 [R[0, 0], R[1, 0], R[2, 0], 0],
                 [R[0, 1], R[1, 1], R[2, 1], 0],
@@ -102,6 +123,8 @@ class Visualizer:
                 [0.0, 0.0, 1.0, 0.0],
                 [px, py, pz, 1.0]
             ]))
+            log.Log(px, py, pz)
+            log2.Log(E[0], E[1], E[2])
             trajectory.append([px, py, pz])
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
