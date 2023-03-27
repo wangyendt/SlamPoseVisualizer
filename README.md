@@ -10,10 +10,43 @@ Suppose you have your VO / VIO / SLAM algorithm running online and printing real
 
 <img width="640" alt="Snipaste_2023-03-27_19-22-29" src="https://user-images.githubusercontent.com/18455758/227927900-cc13d92a-a0ac-47e5-8044-fbcfdeb523de.png">
 
+## 1. Installation & Usage
 
-## 1. Usage
+First, compile official Pangolin python lib.
 
+```bash
+# Get Pangolin
+cd ~/your_fav_code_directory
+git clone --recursive https://github.com/stevenlovegrove/Pangolin.git
+cd Pangolin
+
+# Install dependencies (as described above, or your preferred method)
+./scripts/install_prerequisites.sh recommended
+
+# Configure and build
+cmake -B build
+cmake --build build
+
+# GIVEME THE PYTHON STUFF!!!! (Check the output to verify selected python version)
+cmake --build build -t pypangolin_pip_install
+
+sudo make install
 ```
+
+
+
+After that, you could run the following script in python to verify Pangolin lib is installed.
+
+```python
+import pangolin
+```
+
+
+
+Then you could run our script.
+
+```bash
+cd ~/your_fav_code_directory
 git clone https://github.com/wangyendt/adbSlamPoseVisualizer
 cd adbSlamPoseVisualizer
 python Visualizer.py # run example
@@ -88,3 +121,11 @@ SOFTWARE.
 ## 3. Video
 
 (To be added)
+
+
+
+## 4. Reference
+
+Thanks to the following repo:
+
+[https://github.com/yuntianli91/pangolin_tutorial](https://github.com/yuntianli91/pangolin_tutorial)
