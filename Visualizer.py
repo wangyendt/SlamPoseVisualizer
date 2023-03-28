@@ -68,7 +68,7 @@ class Visualizer:
                           pango.Attach(0), ui_width)
 
         log2 = pango.DataLog()
-        log2.SetLabels(["roll", "pitch", "yaw"])
+        log2.SetLabels(["pitch", "roll", "yaw"])
         plotter2 = pango.Plotter(log2, 0, 400, -200, 200, 1, 1)
         plotter2.Track("$i")
         plotter2.AddMarker(pango.Marker.Horizontal, 180, pango.Marker.GreaterThan, pango.Colour.Red().WithAlpha(0.2))
