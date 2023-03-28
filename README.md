@@ -1,4 +1,4 @@
-# adbSlamPoseVisualizer
+# SlamPoseVisualizer
  A tool for slam pose visualizing via ADB stream base on pypangolin and pyopenGL.
 
 ## 0. Demo
