@@ -49,7 +49,7 @@ Then you could run our script.
 cd ~/your_fav_code_directory
 git clone https://github.com/wangyendt/adbSlamPoseVisualizer
 cd adbSlamPoseVisualizer
-python Visualizer.py # run example
+python run_me.py # run example
 ```
 
 ### 1.1 online version
