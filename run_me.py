@@ -33,8 +33,17 @@ if __name__ == '__main__':
             return []
 
 
+    def dm_cs_handler(line: str) -> List[float]:
+        if line and 'KeyFrameState' in line:
+            data = [float(d) for d in re.findall(r'KeyFrameState: timestamp: ([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*?([-\d.e]{2,}).*', line)[0]]
+            return data
+        else:
+            return []
+
+
     reader = DataReader()
     reader.register_offline_reader('example/data.csv')
+    # reader.register_online_reader(dm_cs_handler)
     # reader.register_online_reader(mercury_handler)
     visualizer = Visualizer(reader)
     visualizer.run()
